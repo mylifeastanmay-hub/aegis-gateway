@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AegisGateway - Developer Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            900: '#164e63',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-shield-halved text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white tracking-tight leading-none">AegisGateway</h1>
+                    <span class="text-xs font-medium text-cyan-400">Zero-Trust LLM Security Proxy</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Live SSE Indicator -->
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold">
+                    <span id="sse-indicator" class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="sse-status-text" class="text-slate-300">LIVE SSE CONNECTED</span>
+                </div>
+
+                <!-- Admin Reset Metrics Button -->
+                <button onclick="resetMetrics()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-md shadow-rose-600/20 transition">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Reset Metrics</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Top Key Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            
+            <!-- Card 1: Total Requests -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider">Total Requests</span>
+                    <i class="fa-solid fa-server text-cyan-400"></i>
+                </div>
+                <div id="metric-total-requests" class="text-2xl font-bold text-white">0</div>
+                <div class="text-xs text-slate-500 mt-1">Processed proxy calls</div>
+            </div>
+
+            <!-- Card 2: Cache Hit Rate -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider">Cache Hit Rate</span>
+                    <i class="fa-solid fa-bolt text-amber-400"></i>
+                </div>
+                <div id="metric-cache-hit-rate" class="text-2xl font-bold text-amber-400">0.0%</div>
+                <div class="text-xs text-slate-500 mt-1">Sub-5ms response savings</div>
+            </div>
+
+            <!-- Card 3: Dollars Saved -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider">Dollars Saved</span>
+                    <i class="fa-solid fa-sack-dollar text-emerald-400"></i>
+                </div>
+                <div id="metric-dollars-saved" class="text-2xl font-bold text-emerald-400">$0.000000</div>
+                <div class="text-xs text-slate-500 mt-1">Token cost reduction</div>
+            </div>
+
+            <!-- Card 4: Blocked PII Threats -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider">PII Threats Scrubbed</span>
+                    <i class="fa-solid fa-user-shield text-rose-400"></i>
+                </div>
+                <div id="metric-pii-threats" class="text-2xl font-bold text-rose-400">0</div>
+                <div class="text-xs text-slate-500 mt-1">Surrogate redacted</div>
+            </div>
+
+            <!-- Card 5: Fallback Count -->
+            <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 relative overflow-hidden group hover:border-slate-700 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium uppercase tracking-wider">Provider Fallbacks</span>
+                    <i class="fa-solid fa-route text-indigo-400"></i>
+                </div>
+                <div id="metric-fallback-count" class="text-2xl font-bold text-indigo-400">0</div>
+                <div class="text-xs text-slate-500 mt-1">Circuit breaker trips</div>
+            </div>
+        </div>
+
+        <!-- Middle Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Latency Line Chart (2 Cols) -->
+            <div class="lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Response Latency Percentiles (ms)</h2>
+                        <p class="text-xs text-slate-400">Rolling p50, p95, and p99 proxy response execution latencies</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs font-medium">
+                        <span class="flex items-center gap-1.5 text-cyan-400"><span class="h-2 w-2 rounded-full bg-cyan-400"></span> p50</span>
+                        <span class="flex items-center gap-1.5 text-indigo-400"><span class="h-2 w-2 rounded-full bg-indigo-400"></span> p95</span>
+                        <span class="flex items-center gap-1.5 text-rose-400"><span class="h-2 w-2 rounded-full bg-rose-400"></span> p99</span>
+                    </div>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- PII Threat Doughnut Chart (1 Col) -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <div>
+                    <h2 class="text-base font-semibold text-white">Scrubbed Threat Types</h2>
+                    <p class="text-xs text-slate-400">Distribution of intercepted PII & secret entities</p>
+                </div>
+                <div class="h-64 relative flex items-center justify-center">
+                    <canvas id="piiChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Live Event Stream Table -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white">Real-Time Proxy Event Stream</h2>
+                    <p class="text-xs text-slate-400">Live feed of inbound completions, provider routes, and security sanitization</p>
+                </div>
+                <span class="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 text-slate-400">Auto-scroll enabled</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="text-slate-400 uppercase bg-slate-950/60 border-b border-slate-800">
+                        <tr>
+                            <th class="py-3 px-4">Time</th>
+                            <th class="py-3 px-4">Requests</th>
+                            <th class="py-3 px-4">Cache Ratio</th>
+                            <th class="py-3 px-4">p50 Latency</th>
+                            <th class="py-3 px-4">Dollars Saved</th>
+                            <th class="py-3 px-4">PII Redacted</th>
+                            <th class="py-3 px-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stream-log-body" class="divide-y divide-slate-800/60 font-mono">
+                        <!-- Dynamic SSE rows prepended here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Dashboard JavaScript Logic -->
+    <script>
+        // Chart.js Instances
+        let latencyChart = null;
+        let piiChart = null;
+        const maxChartDataPoints = 20;
+
+        function initCharts() {
+            // Latency Line Chart
+            const ctxLatency = document.getElementById('latencyChart').getContext('2d');
+            latencyChart = new Chart(ctxLatency, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'p50 (ms)',
+                            data: [],
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'p95 (ms)',
+                            data: [],
+                            borderColor: '#818cf8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [4, 4],
+                            tension: 0.3
+                        },
+                        {
+                            label: 'p99 (ms)',
+                            data: [],
+                            borderColor: '#f43f5e',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 10 } }, beginAtZero: true }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // PII Doughnut Chart
+            const ctxPii = document.getElementById('piiChart').getContext('2d');
+            piiChart = new Chart(ctxPii, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Credit Cards', 'API Keys', 'Emails', 'Phones', 'IPs'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: ['#f43f5e', '#fbbf24', '#06b6d4', '#818cf8', '#34d399'],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // Live SSE Connection
+        function connectSSE() {
+            const eventSource = new EventSource('/api/v1/telemetry/stream');
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateDashboard(data);
+                } catch (e) {
+                    console.error("Error parsing SSE telemetry payload:", e);
+                }
+            };
+
+            eventSource.onerror = function() {
+                document.getElementById('sse-indicator').className = "h-2 w-2 rounded-full bg-amber-500 animate-ping";
+                document.getElementById('sse-status-text').textContent = "RECONNECTING SSE...";
+            };
+
+            eventSource.onopen = function() {
+                document.getElementById('sse-indicator').className = "h-2 w-2 rounded-full bg-emerald-500 animate-pulse";
+                document.getElementById('sse-status-text').textContent = "LIVE SSE CONNECTED";
+            };
+        }
+
+        function updateDashboard(summary) {
+            // 1. Update Metric Cards
+            document.getElementById('metric-total-requests').textContent = summary.total_requests.toLocaleString();
+            document.getElementById('metric-cache-hit-rate').textContent = summary.cache_hit_ratio_percent.toFixed(1) + '%';
+            document.getElementById('metric-dollars-saved').textContent = '$' + summary.estimated_dollars_saved.toFixed(6);
+            document.getElementById('metric-pii-threats').textContent = summary.pii_breakdown.total.toLocaleString();
+            document.getElementById('metric-fallback-count').textContent = summary.fallback_triggered_count.toLocaleString();
+
+            // 2. Update Latency Line Chart
+            const now = new Date().toLocaleTimeString();
+            if (latencyChart.data.labels.length >= maxChartDataPoints) {
+                latencyChart.data.labels.shift();
+                latencyChart.data.datasets[0].data.shift();
+                latencyChart.data.datasets[1].data.shift();
+                latencyChart.data.datasets[2].data.shift();
+            }
+            latencyChart.data.labels.push(now);
+            latencyChart.data.datasets[0].data.push(summary.latency_percentiles_ms.p50);
+            latencyChart.data.datasets[1].data.push(summary.latency_percentiles_ms.p95);
+            latencyChart.data.datasets[2].data.push(summary.latency_percentiles_ms.p99);
+            latencyChart.update();
+
+            // 3. Update PII Threat Breakdown Doughnut Chart
+            piiChart.data.datasets[0].data = [
+                summary.pii_breakdown.credit_cards,
+                summary.pii_breakdown.api_keys,
+                summary.pii_breakdown.emails,
+                summary.pii_breakdown.phones,
+                summary.pii_breakdown.ips
+            ];
+            piiChart.update();
+
+            // 4. Prepend Live Log Stream Row
+            prependLogRow(summary, now);
+        }
+
+        function prependLogRow(summary, timeStr) {
+            const tbody = document.getElementById('stream-log-body');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-800/40 transition";
+
+            tr.innerHTML = `
+                <td class="py-2.5 px-4 text-slate-400">${timeStr}</td>
+                <td class="py-2.5 px-4 font-semibold text-white">${summary.total_requests}</td>
+                <td class="py-2.5 px-4 text-amber-400">${summary.cache_hit_ratio_percent.toFixed(1)}%</td>
+                <td class="py-2.5 px-4 text-cyan-400">${summary.latency_percentiles_ms.p50} ms</td>
+                <td class="py-2.5 px-4 text-emerald-400">$${summary.estimated_dollars_saved.toFixed(6)}</td>
+                <td class="py-2.5 px-4 text-rose-400">${summary.pii_breakdown.total}</td>
+                <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">200 OK</span></td>
+            `;
+
+            tbody.insertBefore(tr, tbody.firstChild);
+
+            // Limit table rows to top 15 entries
+            while (tbody.children.length > 15) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        async function resetMetrics() {
+            if (!confirm("Are you sure you want to reset all active telemetry metrics?")) return;
+
+            try {
+                const apiKey = prompt("Enter Admin API Key:", "aegis-dev-key");
+                if (!apiKey) return;
+
+                const res = await fetch('/api/v1/telemetry/reset', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+
+                if (res.ok) {
+                    alert("Telemetry metrics successfully reset!");
+                } else {
+                    alert("Reset failed: Unauthorized or invalid admin key.");
+                }
+            } catch (e) {
+                alert("Error calling reset API: " + e.message);
+            }
+        }
+
+        // Initialize on DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            connectSSE();
+        });
+    </script>
+</body>
+</html>
